@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  web:
+    image: php:8.2-apache
+    container_name: lamp_web
+    ports:
+      - "80:80"
+    volumes:
+      - ./www:/var/www/html
+      - ./config/php:/usr/local/etc/php
+      - ./logs/apache:/var/log/apache2
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html
+    networks:
+      - lamp_network
+    command: apache2-foreground
+    extra_hosts:
+      - "lamp.localhost:127.0.0.1"
+
+  db:
+    image: mysql:8.0
+    container_name: lamp_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./config/mysql:/etc/mysql/conf.d
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lamp_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    networks:
+      - lamp_network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: lamp_phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    networks:
+      - lamp_network
+
+  redis:
+    image: redis:alpine
+    container_name: lamp_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - lamp_network
+
+networks:
+  lamp_network:
+    driver: bridge
+
